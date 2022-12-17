@@ -22,13 +22,47 @@ const initAssistant = (getState) => {
   if (process.env.NODE_ENV === "development") {
     return createSmartappDebugger({
       token: process.env.REACT_APP_TOKEN ?? "",
-      initPhrase: `Открой Помодоро`,
-      getState
+      initPhrase: `Запусти ${process.env.REACT_APP_SMARTAPP}`,
+      getState,
     });
   }
   return createAssistant({ getState });
 };
 
+const timePeriod = [
+  {MinStr: "один", MinNum: "1"},
+  {MinStr: "одну", MinNum: "1"},
+  {MinStr: "две", MinNum: "2"},
+  {MinStr: "два", MinNum: "2"},
+  {MinStr: "три", MinNum: "3"},
+  {MinStr: "пять", MinNum: "5"},
+  {MinStr: "восемь", MinNum: "8"},
+  {MinStr: "десять", MinNum: "10"},
+  {MinStr: "пятнадцать", MinNum: "15"},
+  {MinStr: 'двадцать', MinNum: "20"},
+  {MinStr: "двадцать пять", MinNum: "25"},
+  {MinStr: "тридцать", MinNum: "30"},
+  {MinStr: "тридцать пять", MinNum: "35"},
+  {MinStr: "сорок", MinNum: "40"},
+  {MinStr: "сорок пять", MinNum: "45"},
+  {MinStr: "пятьдесят", MinNum: "50"},
+  {MinStr: "час", MinNum: "60"},
+  {MinStr: "один час", MinNum: "60"},
+  {MinStr: "два часа", MinNum: "120"},
+  {MinStr: "2 часа", MinNum: "120"},
+]
+
+function whatTime(responseActionStr) {
+  let requestedTime = undefined;
+
+  for(let i = 0; i < timePeriod.length; i++){
+    if(responseActionStr.indexOf(timePeriod[i].MinStr) !== -1 || responseActionStr.indexOf(timePeriod[i].MinNum) !== -1) {
+      requestedTime = parseInt(timePeriod[i].MinNum);
+    }
+  }
+
+  if(requestedTime !== undefined) {return requestedTime;}
+}
 
 function App() {
   const [showSettings, setShowSettings] = useState(false);
@@ -40,14 +74,14 @@ function App() {
   const assistant = useRef(typeof createAssistant);
 
   var state = {
-    notes: [],
+    minutes: [],
     };
 
     const getStateForAssistant = () => {
       console.log("getStateForAssistant: this.state:", state);
       const state_ = {
       item_selector: {
-      items: state.notes.map(({ id, title }, index) => ({
+      items: state.minutes.map(({ id, title }, index) => ({
       number: index + 1,
       id,
       title,
@@ -86,6 +120,9 @@ function App() {
     const dispatchAssistantAction = async (action) => {
       console.log("dispatchAssistantAction", action);
       if (action) {
+        let workTime = 45;
+        let breakTime = 15;
+        console.log(action.minutes);
         switch (action.type) {
           case "timerUp":
             console.log("timerUp")
@@ -94,6 +131,24 @@ function App() {
           case "timerDown":
             console.log("timerDown")
             document.getElementById("pauseBtn").click();
+            break;
+          case "openSettings":
+            console.log("openSettings")
+            setShowSettings(true);
+            break;
+          case "closeSettings":
+            console.log("closeSettings")
+            setShowSettings(false);
+            break;
+          case "setSessionTime":
+            workTime = whatTime(action.minutes);
+            console.log("setSessionTime")
+            setWorkMinutes(workTime);
+            break;
+          case "setBreakTime":
+            breakTime = whatTime(action.minutes);
+            console.log("setBreakTime")
+            setBreakMinutes(breakTime);
             break;
           default:
             break;
